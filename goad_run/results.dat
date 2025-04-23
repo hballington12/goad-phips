@@ -1,0 +1,29 @@
+# GOAD Simulation Results
+# ======================
+
+# Parameters
+# ----------
+
+# Power Distribution
+# ----------------
+Input Power:           23944.769531
+Output Power:          23378.912109
+Absorbed Power:        0.000000
+Truncated Reflections: 433.831177
+Truncated Recursions:  89.699265
+Truncated Clip Error:  41.813896
+Truncated Energy:      0.061978
+Truncated Area:        0.230182
+Truncated Cutoff:      0.000000
+External Diffraction:  23944.763672
+Missing Power:         0.218750
+
+# Power Ratios
+# ------------
+Scattered/Input Ratio: 0.976368
+Absorbed/Input Ratio:  0.000000
+Total/Input Ratio:     0.976368
+
+# Simulation Information
+# ---------------------
+Number of bins: 8820

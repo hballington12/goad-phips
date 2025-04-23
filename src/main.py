@@ -7,7 +7,7 @@ import os
 import json
 from components.command_manager import CommandManager
 from components.plotting import PlottingWidget
-from components.obj_viewer import OBJViewer
+from components.obj_viewer import MultiViewOBJViewer
 
 # Path for storing settings
 SETTINGS_FILE = os.path.expanduser("~/Documents/work/post-doc/phips/app/light-scattering-app/settings.json")
@@ -145,8 +145,8 @@ class MainWindow(QMainWindow):
         model_title.setStyleSheet("font-size: 14px; font-weight: bold;")
         right_pane.addWidget(model_title)
         
-        # Create 3D viewer widget
-        self.obj_viewer = OBJViewer(self)
+        # Create multi-view 3D viewer widget (replace the single OBJViewer)
+        self.obj_viewer = MultiViewOBJViewer(self)
         right_pane.addWidget(self.obj_viewer)
         
         # Add 3D viewer controls
@@ -236,6 +236,10 @@ class MainWindow(QMainWindow):
             if has_obj:
                 self.terminal.append_output(f"Found 3D model file: {self.obj_file}", False)
                 self.view_3d_button.setEnabled(True)
+                
+                # Automatically load and display the 3D model
+                self.terminal.append_output("Loading 3D model automatically...", False)
+                self.view_3d_model()
             else:
                 self.terminal.append_output(f"3D model file not found: {self.obj_file}", True)
                 self.view_3d_button.setEnabled(False)

@@ -4,6 +4,7 @@ from OpenGL.GLU import *
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QSurfaceFormat
+from PyQt6.QtWidgets import QVBoxLayout, QWidget, QLabel, QHBoxLayout
 import math
 import os
 
@@ -74,8 +75,8 @@ class OBJViewer(QOpenGLWidget):
         
         # Initialize parameters
         self.obj_model = OBJModel()
-        self.rotation_x = 0.0
-        self.rotation_y = 0.0
+        self.rotation_x = 0.0  # Start with some initial rotation
+        self.rotation_y = 0.0  # to make the model more visible
         self.zoom = -5.0
         self.last_pos = QPoint()
         
@@ -83,8 +84,15 @@ class OBJViewer(QOpenGLWidget):
         self.model_color = (0.7, 0.7, 0.9, 1.0)  # Light blue
         self.background_color = (0.2, 0.2, 0.2, 1.0)  # Dark gray
         
+        # Set minimum size to ensure visibility
+        self.setMinimumSize(300, 300)
+        
         # Allow mouse tracking for interactivity
         self.setMouseTracking(True)
+        
+        # Initialize model center and size with defaults
+        self.model_center = np.array([0.0, 0.0, 0.0])
+        self.model_size = 1.0
     
     def load_obj(self, filename):
         """Load an OBJ file and prepare it for rendering"""
@@ -136,6 +144,9 @@ class OBJViewer(QOpenGLWidget):
         glRotatef(self.rotation_x, 1.0, 0.0, 0.0)
         glRotatef(self.rotation_y, 0.0, 1.0, 0.0)
         
+        # Draw coordinate axes first
+        self._draw_axes()
+        
         # If we have a model, center and scale it
         if self.obj_model.vertices:
             # Scale to fit view
@@ -183,6 +194,65 @@ class OBJViewer(QOpenGLWidget):
                     glVertex3fv(self.obj_model.vertices[vi])
             glEnd()
     
+    def _draw_axes(self):
+        """Draw the coordinate axes (X: blue, Y: green, Z: red)"""
+        # Save current lighting state
+        lighting_enabled = glIsEnabled(GL_LIGHTING)
+        
+        # Disable lighting for the axes
+        glDisable(GL_LIGHTING)
+        
+        # Set line properties
+        glLineWidth(1.5)  # Thin lines
+        
+        # Draw coordinate axes at origin
+        axis_length = 1.0  # Length of each axis
+        
+        # X axis - Blue
+        glBegin(GL_LINES)
+        glColor3f(0.0, 0.0, 1.0)  # Blue
+        glVertex3f(0.0, 0.0, 0.0)  # Origin
+        glVertex3f(axis_length, 0.0, 0.0)  # X direction
+        glEnd()
+        
+        # Y axis - Green
+        glBegin(GL_LINES)
+        glColor3f(0.0, 1.0, 0.0)  # Green
+        glVertex3f(0.0, 0.0, 0.0)  # Origin
+        glVertex3f(0.0, axis_length, 0.0)  # Y direction
+        glEnd()
+        
+        # Z axis - Red
+        glBegin(GL_LINES)
+        glColor3f(1.0, 0.0, 0.0)  # Red
+        glVertex3f(0.0, 0.0, 0.0)  # Origin
+        glVertex3f(0.0, 0.0, axis_length)  # Z direction
+        glEnd()
+        
+        # Add small labels at the end of each axis
+        self._draw_axis_label("X", axis_length, 0.0, 0.0, (0.0, 0.0, 1.0))
+        self._draw_axis_label("Y", 0.0, axis_length, 0.0, (0.0, 1.0, 0.0))
+        self._draw_axis_label("Z", 0.0, 0.0, axis_length, (1.0, 0.0, 0.0))
+        
+        # Reset color to white
+        glColor3f(1.0, 1.0, 1.0)
+        
+        # Restore lighting state
+        if lighting_enabled:
+            glEnable(GL_LIGHTING)
+
+    def _draw_axis_label(self, text, x, y, z, color):
+        """Draw a text label at the specified position (simplified)"""
+        # Note: Text rendering in OpenGL requires more setup
+        # This is a simplified placeholder - real text rendering would need
+        # bitmap fonts or texture-based text
+        
+        # In a production app, you'd use a library like FTGL or render
+        # text to textures and apply them as billboards
+        
+        # For now, we'll just leave this as a placeholder for future enhancement
+        pass
+    
     def mousePressEvent(self, event):
         """Handle mouse press events for rotation"""
         self.last_pos = event.position().toPoint()
@@ -206,3 +276,70 @@ class OBJViewer(QOpenGLWidget):
         delta = event.angleDelta().y() / 120.0
         self.zoom += delta * 0.5
         self.update()
+
+class MultiViewOBJViewer(QWidget):
+    """Container widget that manages multiple OBJ viewers with different perspectives"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # Create layout for the viewers
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(5)
+        
+        # Create the first viewer (30 degrees from positive Z axis in YZ plane)
+        self.top_view_label = QLabel("View 1: +30° from +Z axis")
+        self.top_view_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.top_viewer = OBJViewer(self)
+        
+        # Set initial rotation for first view:
+        # We need to first rotate around Y to position in YZ plane (90 degrees)
+        # Then around X to get 30 degrees from Z (60 degrees)
+        self.top_viewer.rotation_y = 90.0  # Rotate to YZ plane
+        self.top_viewer.rotation_x = 60.0  # 30 degrees from Z (90-30=60)
+        self.top_viewer.rotation_z = 90.0  # Make X the "up" direction
+        
+        # Create the second viewer (30 degrees from negative Z axis in YZ plane)
+        self.bottom_view_label = QLabel("View 2: +30° from -Z axis")
+        self.bottom_view_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.bottom_viewer = OBJViewer(self)
+        
+        # Set initial rotation for second view:
+        # Similar to above but from negative Z (210 degrees from positive Z)
+        self.bottom_viewer.rotation_y = 90.0  # Rotate to YZ plane
+        self.bottom_viewer.rotation_x = -60.0  # 30 degrees from -Z (-90+30=-60)
+        self.bottom_viewer.rotation_z = 90.0  # Make X the "up" direction
+        
+        # Add viewers to layout
+        top_view_container = QVBoxLayout()
+        top_view_container.addWidget(self.top_view_label)
+        top_view_container.addWidget(self.top_viewer)
+        
+        bottom_view_container = QVBoxLayout()
+        bottom_view_container.addWidget(self.bottom_view_label)
+        bottom_view_container.addWidget(self.bottom_viewer)
+        
+        self.layout.addLayout(top_view_container)
+        self.layout.addLayout(bottom_view_container)
+        
+        # Keep track of loaded models
+        self.current_model_file = None
+
+    def load_obj(self, filename):
+        """Load OBJ model in both viewers"""
+        try:
+            # Load the model in both viewers
+            success1, message1 = self.top_viewer.load_obj(filename)
+            success2, message2 = self.bottom_viewer.load_obj(filename)
+            
+            if success1 and success2:
+                self.current_model_file = filename
+                return True, f"Model loaded successfully in both views"
+            elif success1:
+                return False, f"Error loading in second view: {message2}"
+            else:
+                return False, f"Error loading model: {message1}"
+        except Exception as e:
+            import traceback
+            return False, f"Exception loading model: {str(e)}\n{traceback.format_exc()}"

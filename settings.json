@@ -1,0 +1,1 @@
+{"default_command": "/Users/ixguard/Documents/work/rust/goad/target/release/goad --geo plate.obj --custom phips_bins.toml --euler xyz --discrete 0,20,17", "use_discrete_angles": true, "alpha_value": 117.0, "beta_value": 12.0, "gamma_value": 17.0}

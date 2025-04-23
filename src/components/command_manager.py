@@ -180,35 +180,23 @@ class CommandManager(QObject):
         button_layout = QHBoxLayout()
         button_layout.setContentsMargins(0, 5, 0, 0)
         
-        # Set button style for more compact buttons
-        button_style = """
-            QPushButton {
-                padding: 4px 8px;
-                font-size: 11px;
-            }
-        """
-        
         # Reset button goes back to the saved default
         self.reset_button = QPushButton("Reset")
-        self.reset_button.setStyleSheet(button_style)
         self.reset_button.clicked.connect(self.reset_command)
         self.reset_button.setToolTip("Reset to saved default command")
         
         # Save as default button to store the current command
         self.save_default_button = QPushButton("Save Default")
-        self.save_default_button.setStyleSheet(button_style)
         self.save_default_button.clicked.connect(self.save_as_default)
         self.save_default_button.setToolTip("Save current command as default")
         
         # Factory reset button to restore original default
         self.factory_reset_button = QPushButton("Factory Reset")
-        self.factory_reset_button.setStyleSheet(button_style)
         self.factory_reset_button.clicked.connect(self.factory_reset)
         self.factory_reset_button.setToolTip("Reset to factory default")
         
         # Run button
         self.run_button = QPushButton("Run Command")
-        self.run_button.setStyleSheet(button_style)
         self.run_button.clicked.connect(self.run_command)
         
         # Add buttons to layout
@@ -257,6 +245,26 @@ class CommandManager(QObject):
         """Reset command to current default"""
         if self.input:
             self.input.setText(self.default_command)
+            
+            # Load the saved settings to get the default values
+            self.load_settings()
+            
+            # Reset angle fields to the default values from settings
+            if hasattr(self, 'alpha_input'):
+                self.alpha_input.setValue(self.alpha_value)
+            if hasattr(self, 'beta_input'):
+                self.beta_input.setValue(self.beta_value)
+            if hasattr(self, 'gamma_input'):
+                self.gamma_input.setValue(self.gamma_value)
+                
+            # Make sure the checkbox is in the right state based on loaded settings
+            if hasattr(self, 'discrete_checkbox'):
+                self.discrete_checkbox.setChecked(self.use_discrete_angles)
+                
+            # Update the preview after resetting
+            self._update_angle_preview()
+            
+            self.command_output.emit("Reset to default settings.", False)
     
     def save_as_default(self):
         """Save current command as new default"""
