@@ -71,26 +71,29 @@ class CommandManager(QObject):
         # Form layout for angle inputs
         form_layout = QFormLayout()
         form_layout.setSpacing(5)  # Reduced spacing
+
+        # Set the default spin box step size
+        STEP_SIZE = 1
         
         # Create spin boxes for angles
         self.alpha_input = QDoubleSpinBox()
         self.alpha_input.setRange(0, 360)
         self.alpha_input.setValue(self.alpha_value)
-        self.alpha_input.setSingleStep(5)
+        self.alpha_input.setSingleStep(STEP_SIZE)
         self.alpha_input.setDecimals(1)
         self.alpha_input.setEnabled(self.use_discrete_angles)
         
         self.beta_input = QDoubleSpinBox()
         self.beta_input.setRange(0, 360)
         self.beta_input.setValue(self.beta_value)
-        self.beta_input.setSingleStep(5)
+        self.beta_input.setSingleStep(STEP_SIZE)
         self.beta_input.setDecimals(1)
         self.beta_input.setEnabled(self.use_discrete_angles)
         
         self.gamma_input = QDoubleSpinBox()
         self.gamma_input.setRange(0, 360)
         self.gamma_input.setValue(self.gamma_value)
-        self.gamma_input.setSingleStep(5)
+        self.gamma_input.setSingleStep(STEP_SIZE)
         self.gamma_input.setDecimals(1)
         self.gamma_input.setEnabled(self.use_discrete_angles)
         
