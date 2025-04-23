@@ -1,0 +1,7 @@
+PyQt6
+numpy
+matplotlib
+pytest
+toml
+PyOpenGL
+PyOpenGL_accelerate
