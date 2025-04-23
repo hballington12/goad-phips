@@ -161,9 +161,9 @@ class OBJViewer(QOpenGLWidget):
         glScalef(scale_factor, scale_factor, scale_factor)
         
         # Apply rotations
-        glRotatef(self.rotation_z, 0.0, 0.0, 1.0)  # Z-axis rotation (roll)
+        glRotatef(self.rotation_y, 0.0, 1.0, 0.0)  # Y-axis rotation (yaw)
         glRotatef(self.rotation_x, 1.0, 0.0, 0.0)  # X-axis rotation (pitch)
-        # glRotatef(self.rotation_y, 0.0, 1.0, 0.0)  # Y-axis rotation (yaw)
+        glRotatef(self.rotation_z, 0.0, 0.0, 1.0)  # Z-axis rotation (roll)
         
         # Draw coordinate axes first
         self._draw_axes()
@@ -229,9 +229,9 @@ class OBJViewer(QOpenGLWidget):
         # Draw coordinate axes at origin
         axis_length = 1.0  # Length of each axis
         
-        # X axis - Blue
+        # X axis - Red
         glBegin(GL_LINES)
-        glColor3f(0.0, 0.0, 1.0)  # Blue
+        glColor3f(1.0, 0.0, 0.0)  # Red
         glVertex3f(0.0, 0.0, 0.0)  # Origin
         glVertex3f(axis_length, 0.0, 0.0)  # X direction
         glEnd()
@@ -243,9 +243,9 @@ class OBJViewer(QOpenGLWidget):
         glVertex3f(0.0, axis_length, 0.0)  # Y direction
         glEnd()
         
-        # Z axis - Red
+        # Z axis - Blue
         glBegin(GL_LINES)
-        glColor3f(1.0, 0.0, 0.0)  # Red
+        glColor3f(0.0, 0.0, 1.0)  # Blue
         glVertex3f(0.0, 0.0, 0.0)  # Origin
         glVertex3f(0.0, 0.0, axis_length)  # Z direction
         glEnd()
@@ -329,9 +329,9 @@ class MultiViewOBJViewer(QWidget):
         # Set initial rotation for first view:
         # We need to first rotate around Y to position in YZ plane (90 degrees)
         # Then around X to get 30 degrees from Z (60 degrees)
-        self.top_viewer.rotation_y = 0.0  # Rotate to YZ plane
+        self.top_viewer.rotation_z = 90.0  # Make X the "up" direction
         self.top_viewer.rotation_x = 0.0  # 30 degrees from Z (90-30=60)
-        self.top_viewer.rotation_z = 0.0  # Make X the "up" direction
+        self.top_viewer.rotation_y = 150.0  # Rotate to YZ plane
         
         # Create the second viewer (30 degrees from negative Z axis in YZ plane)
         self.bottom_view_label = QLabel("View 2: +30° from -Z axis")
@@ -340,9 +340,9 @@ class MultiViewOBJViewer(QWidget):
         
         # Set initial rotation for second view:
         # Similar to above but from negative Z (210 degrees from positive Z)
-        self.bottom_viewer.rotation_y = 90.0  # Rotate to YZ plane
-        self.bottom_viewer.rotation_x = -60.0  # 30 degrees from -Z (-90+30=-60)
         self.bottom_viewer.rotation_z = 90.0  # Make X the "up" direction
+        self.bottom_viewer.rotation_x = 0.0  # 30 degrees from -Z (-90+30=-60)
+        self.bottom_viewer.rotation_y = 30.0  # Rotate to YZ plane
         
         # Add viewers to layout
         top_view_container = QVBoxLayout()
