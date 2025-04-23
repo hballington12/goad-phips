@@ -4,6 +4,24 @@ from PyQt6.QtWidgets import (QLineEdit, QMessageBox, QPushButton, QHBoxLayout,
                            QVBoxLayout, QLabel, QDoubleSpinBox, QCheckBox, 
                            QGroupBox, QFormLayout, QWidget)
 from PyQt6.QtCore import QProcess, QTimer, pyqtSignal, QObject, Qt
+from PyQt6.QtGui import QKeyEvent
+
+# Create custom input classes that respond to Enter key
+class EnterResponsiveLineEdit(QLineEdit):
+    enterPressed = pyqtSignal()
+    
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.enterPressed.emit()
+        super().keyPressEvent(event)
+
+class EnterResponsiveSpinBox(QDoubleSpinBox):
+    enterPressed = pyqtSignal()
+    
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.enterPressed.emit()
+        super().keyPressEvent(event)
 
 class CommandManager(QObject):
     """Manages command input, settings, and execution"""
@@ -46,9 +64,10 @@ class CommandManager(QObject):
         # Create main command layout
         main_command_layout = QVBoxLayout()
         
-        # Command input for entering commands
-        self.input = QLineEdit()
+        # Command input for entering commands - Use our custom class that responds to Enter key
+        self.input = EnterResponsiveLineEdit()
         self.input.setText(self.default_command)
+        self.input.enterPressed.connect(self.run_command)  # Connect Enter key to run_command
         main_command_layout.addWidget(self.input)
         
         # Create a horizontal layout for the three columns
@@ -75,27 +94,30 @@ class CommandManager(QObject):
         # Set the default spin box step size
         STEP_SIZE = 1
         
-        # Create spin boxes for angles
-        self.alpha_input = QDoubleSpinBox()
+        # Create spin boxes for angles - Use our custom class that responds to Enter key
+        self.alpha_input = EnterResponsiveSpinBox()
         self.alpha_input.setRange(0, 360)
         self.alpha_input.setValue(self.alpha_value)
         self.alpha_input.setSingleStep(STEP_SIZE)
         self.alpha_input.setDecimals(1)
         self.alpha_input.setEnabled(self.use_discrete_angles)
+        self.alpha_input.enterPressed.connect(self.run_command)  # Connect Enter key to run_command
         
-        self.beta_input = QDoubleSpinBox()
+        self.beta_input = EnterResponsiveSpinBox()
         self.beta_input.setRange(0, 360)
         self.beta_input.setValue(self.beta_value)
         self.beta_input.setSingleStep(STEP_SIZE)
         self.beta_input.setDecimals(1)
         self.beta_input.setEnabled(self.use_discrete_angles)
+        self.beta_input.enterPressed.connect(self.run_command)  # Connect Enter key to run_command
         
-        self.gamma_input = QDoubleSpinBox()
+        self.gamma_input = EnterResponsiveSpinBox()
         self.gamma_input.setRange(0, 360)
         self.gamma_input.setValue(self.gamma_value)
         self.gamma_input.setSingleStep(STEP_SIZE)
         self.gamma_input.setDecimals(1)
         self.gamma_input.setEnabled(self.use_discrete_angles)
+        self.gamma_input.enterPressed.connect(self.run_command)  # Connect Enter key to run_command
         
         # Add fields to form layout
         form_layout.addRow("α (°):", self.alpha_input)
