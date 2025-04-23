@@ -75,9 +75,13 @@ class OBJViewer(QOpenGLWidget):
         
         # Initialize parameters
         self.obj_model = OBJModel()
-        self.rotation_x = 0.0  # Start with some initial rotation
-        self.rotation_y = 0.0  # to make the model more visible
-        self.zoom = -5.0
+        self.rotation_x = 0.0
+        self.rotation_y = 0.0
+        self.rotation_z = 0.0  # Added Z rotation
+       
+        # For orthographic projection, zoom is a scale factor rather than a z-translation
+        self.zoom = 2.0  # Default scale (1.0 = 100%)
+        
         self.last_pos = QPoint()
         
         # Colors for the model
@@ -126,23 +130,40 @@ class OBJViewer(QOpenGLWidget):
         glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
     
     def resizeGL(self, width, height):
-        """Handle widget resize events"""
+        """Handle widget resize events with orthographic projection"""
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
+        
+        # Calculate aspect ratio
         aspect = width / height if height > 0 else 1.0
-        gluPerspective(45, aspect, 0.1, 100.0)
+        
+        # Use an orthographic projection instead of perspective
+        # The size determines how much of the world is visible
+        size = 3.0  # Adjust this value to control zoom level
+        
+        if width <= height:
+            # Width is smaller, use it to determine size
+            glOrtho(-size, size, -size / aspect, size / aspect, -100.0, 100.0)
+        else:
+            # Height is smaller, use it to determine size
+            glOrtho(-size * aspect, size * aspect, -size, size, -100.0, 100.0)
+        
         glMatrixMode(GL_MODELVIEW)
     
     def paintGL(self):
-        """Render the scene"""
+        """Render the scene with orthographic projection"""
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
         
-        # Position camera
-        glTranslatef(0.0, 0.0, self.zoom)
-        glRotatef(self.rotation_x, 1.0, 0.0, 0.0)
-        glRotatef(self.rotation_y, 0.0, 1.0, 0.0)
+        # For orthographic projection, use scaling instead of z-translation for zoom
+        scale_factor = self.zoom
+        glScalef(scale_factor, scale_factor, scale_factor)
+        
+        # Apply rotations
+        glRotatef(self.rotation_z, 0.0, 0.0, 1.0)  # Z-axis rotation (roll)
+        glRotatef(self.rotation_x, 1.0, 0.0, 0.0)  # X-axis rotation (pitch)
+        # glRotatef(self.rotation_y, 0.0, 1.0, 0.0)  # Y-axis rotation (yaw)
         
         # Draw coordinate axes first
         self._draw_axes()
@@ -150,13 +171,13 @@ class OBJViewer(QOpenGLWidget):
         # If we have a model, center and scale it
         if self.obj_model.vertices:
             # Scale to fit view
-            scale_factor = 2.0 / self.model_size if self.model_size > 0 else 1.0
-            glScalef(scale_factor, scale_factor, scale_factor)
+            model_scale = 2.0 / self.model_size if self.model_size > 0 else 1.0
+            glScalef(model_scale, model_scale, model_scale)
             
             # Center the model
             glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
             
-            # Set material properties
+            # Set material properties and render model as before
             glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, self.model_color)
             
             # Draw the model
@@ -272,9 +293,21 @@ class OBJViewer(QOpenGLWidget):
         self.last_pos = pos
     
     def wheelEvent(self, event):
-        """Handle mouse wheel for zooming"""
+        """Handle mouse wheel for orthographic zoom"""
         delta = event.angleDelta().y() / 120.0
-        self.zoom += delta * 0.5
+        
+        # For orthographic projection, we'll use a scaling factor
+        # instead of translating along Z axis
+        if delta > 0:
+            # Zoom in: scale up by a factor
+            self.zoom *= 1.1
+        else:
+            # Zoom out: scale down by a factor
+            self.zoom /= 1.1
+        
+        # Ensure minimum and maximum zoom levels
+        self.zoom = max(0.1, min(self.zoom, 10.0))
+        
         self.update()
 
 class MultiViewOBJViewer(QWidget):
@@ -296,9 +329,9 @@ class MultiViewOBJViewer(QWidget):
         # Set initial rotation for first view:
         # We need to first rotate around Y to position in YZ plane (90 degrees)
         # Then around X to get 30 degrees from Z (60 degrees)
-        self.top_viewer.rotation_y = 90.0  # Rotate to YZ plane
-        self.top_viewer.rotation_x = 60.0  # 30 degrees from Z (90-30=60)
-        self.top_viewer.rotation_z = 90.0  # Make X the "up" direction
+        self.top_viewer.rotation_y = 0.0  # Rotate to YZ plane
+        self.top_viewer.rotation_x = 0.0  # 30 degrees from Z (90-30=60)
+        self.top_viewer.rotation_z = 0.0  # Make X the "up" direction
         
         # Create the second viewer (30 degrees from negative Z axis in YZ plane)
         self.bottom_view_label = QLabel("View 2: +30° from -Z axis")
