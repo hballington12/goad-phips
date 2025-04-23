@@ -23,6 +23,9 @@ class PlottingWidget(QWidget):
         self.phips_end = 170
         self.bin_width = 8
         
+        # Reference data file
+        self.reference_data_file = "Plate_Crystal_IMPACTS2022_RF02_3606.txt"
+        
         # Setup the figure canvas
         self.figure = Figure(figsize=(5, 4), dpi=100)
         self.canvas = FigureCanvas(self.figure)
@@ -56,7 +59,7 @@ class PlottingWidget(QWidget):
             return None, f"Error reading {filename}: {str(e)}"
     
     def process_and_plot_data(self, data_file, bins_file=None):
-        """Process and plot the mueller scatgrid data"""
+        """Process and plot the mueller scatgrid data with reference data if available"""
         # If bins_file is provided, use it, otherwise use default PHIPS binning
         data, message = self.read_mueller_scatgrid(data_file)
         
@@ -100,7 +103,32 @@ class PlottingWidget(QWidget):
             
             # Generate the plot
             self.axes.clear()
-            self.axes.plot(theta, values, 'o-', markersize=8, color='b', label='Mean DSCS')
+            
+            # Plot the computed data in blue
+            self.axes.plot(theta, values, 'o-', markersize=8, color='b', label='GOAD')
+            
+            # Replace the reference file section in process_and_plot_data
+            reference_file = self.reference_data_file
+            if os.path.exists(reference_file):
+                try:
+                    # Load reference data with tab separator, skipping comment lines
+                    ref_data = np.loadtxt(reference_file, comments='//')
+                    
+                    # Extract angles and values
+                    ref_angles = ref_data[:, 0]
+                    ref_values = ref_data[:, 1]
+                    
+                    # Plot reference data in red
+                    self.axes.plot(ref_angles, ref_values, 's-', markersize=6, color='r', 
+                                  label='PHIPS (IMPACTS2022)')
+                    
+                    bin_values_log.append("\nReference data from IMPACTS2022 also plotted")
+                except Exception as e:
+                    bin_values_log.append(f"\nError loading reference data: {str(e)}")
+            else:
+                bin_values_log.append(f"\nReference data file '{reference_file}' not found")
+            
+            # Complete the plot formatting
             self.axes.set_xlabel('Scattering Angle (degrees)')
             self.axes.set_ylabel('Mean DSCS')
             self.axes.set_title('PHIPS Scattering Intensity vs. Angle')

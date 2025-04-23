@@ -92,11 +92,11 @@ class CommandManager(QObject):
         form_layout.setSpacing(5)  # Reduced spacing
 
         # Set the default spin box step size
-        STEP_SIZE = 1
+        STEP_SIZE = 0.1
         
         # Create spin boxes for angles - Use our custom class that responds to Enter key
         self.alpha_input = EnterResponsiveSpinBox()
-        self.alpha_input.setRange(0, 360)
+        self.alpha_input.setRange(-360, 360)  # Changed range from 0-360 to -360-360
         self.alpha_input.setValue(self.alpha_value)
         self.alpha_input.setSingleStep(STEP_SIZE)
         self.alpha_input.setDecimals(1)
@@ -104,7 +104,7 @@ class CommandManager(QObject):
         self.alpha_input.enterPressed.connect(self.run_command)  # Connect Enter key to run_command
         
         self.beta_input = EnterResponsiveSpinBox()
-        self.beta_input.setRange(0, 360)
+        self.beta_input.setRange(-360, 360)  # Changed range from 0-360 to -360-360
         self.beta_input.setValue(self.beta_value)
         self.beta_input.setSingleStep(STEP_SIZE)
         self.beta_input.setDecimals(1)
@@ -112,7 +112,7 @@ class CommandManager(QObject):
         self.beta_input.enterPressed.connect(self.run_command)  # Connect Enter key to run_command
         
         self.gamma_input = EnterResponsiveSpinBox()
-        self.gamma_input.setRange(0, 360)
+        self.gamma_input.setRange(-360, 360)  # Changed range from 0-360 to -360-360
         self.gamma_input.setValue(self.gamma_value)
         self.gamma_input.setSingleStep(STEP_SIZE)
         self.gamma_input.setDecimals(1)
@@ -238,7 +238,8 @@ class CommandManager(QObject):
         self.beta_value = beta
         self.gamma_value = gamma
         
-        preview_text = f"--discrete {alpha:.1f},{beta:.1f},{gamma:.1f}"
+        # Updated format with quotes
+        preview_text = f'--discrete={alpha:.1f},{beta:.1f},{gamma:.1f}'
         self.angle_preview.setText(preview_text)
     
     def reset_command(self):
@@ -303,7 +304,7 @@ class CommandManager(QObject):
             alpha = self.alpha_input.value()
             beta = self.beta_input.value()
             gamma = self.gamma_input.value()
-            angle_arg = f"--discrete {alpha:.1f},{beta:.1f},{gamma:.1f}"
+            angle_arg = f'--discrete={alpha:.1f},{beta:.1f},{gamma:.1f}'  # Changed commas to spaces
             
             # Append to command text if not already present
             if "--discrete" not in command_text:
@@ -311,15 +312,26 @@ class CommandManager(QObject):
             else:
                 # Replace existing --discrete parameter
                 parts = command_text.split()
+                new_parts = []
+                skip_next = False
+                
                 for i, part in enumerate(parts):
+                    if skip_next:
+                        skip_next = False
+                        continue
+                        
                     if part == "--discrete" and i + 1 < len(parts):
-                        parts[i + 1] = f"{alpha:.1f},{beta:.1f},{gamma:.1f}"
-                        break
+                        # Replace --discrete value format
+                        new_parts.append(f'--discrete="{parts[i + 1]}"')
+                        skip_next = True
                     elif part.startswith("--discrete="):
-                        parts[i] = f"--discrete={alpha:.1f},{beta:.1f},{gamma:.1f}"
-                        break
-                command_text = " ".join(parts)
-            
+                        # Replace existing --discrete=value format with space-separated values
+                        new_parts.append(f'--discrete="{alpha:.1f},{beta:.1f},{gamma:.1f}"')
+                    else:
+                        new_parts.append(part)
+                        
+                command_text = " ".join(new_parts)
+        
         # Disable run button during process execution
         if self.run_button:
             self.run_button.setEnabled(False)
