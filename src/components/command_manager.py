@@ -51,9 +51,16 @@ class CommandManager(QObject):
         self.input.setText(self.default_command)
         main_command_layout.addWidget(self.input)
         
+        # Create a horizontal layout for the three columns
+        three_column_layout = QHBoxLayout()
+        
+        # === COLUMN 1: Angle Controls ===
+        angle_column = QVBoxLayout()
+        
         # Create angle inputs group
-        angle_group = QGroupBox("Discrete Orientation Angles")
+        angle_group = QGroupBox("Orientation")
         angle_layout = QVBoxLayout()
+        angle_layout.setContentsMargins(5, 5, 5, 5)  # Reduced margins
         
         # Checkbox to enable/disable discrete angles
         self.discrete_checkbox = QCheckBox("Use discrete angles")
@@ -63,6 +70,7 @@ class CommandManager(QObject):
         
         # Form layout for angle inputs
         form_layout = QFormLayout()
+        form_layout.setSpacing(5)  # Reduced spacing
         
         # Create spin boxes for angles
         self.alpha_input = QDoubleSpinBox()
@@ -87,14 +95,15 @@ class CommandManager(QObject):
         self.gamma_input.setEnabled(self.use_discrete_angles)
         
         # Add fields to form layout
-        form_layout.addRow("Alpha (°):", self.alpha_input)
-        form_layout.addRow("Beta (°):", self.beta_input)
-        form_layout.addRow("Gamma (°):", self.gamma_input)
+        form_layout.addRow("α (°):", self.alpha_input)
+        form_layout.addRow("β (°):", self.beta_input)
+        form_layout.addRow("γ (°):", self.gamma_input)
         angle_layout.addLayout(form_layout)
         
         # Add a preview label
         self.angle_preview = QLabel("--discrete 0.0,0.0,0.0")
-        self.angle_preview.setStyleSheet("color: gray; font-style: italic;")
+        self.angle_preview.setStyleSheet("color: gray; font-style: italic; font-size: 10px;")
+        self.angle_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         angle_layout.addWidget(self.angle_preview)
         
         # Connect value changed signals
@@ -107,7 +116,36 @@ class CommandManager(QObject):
         
         # Set the layout on the group box
         angle_group.setLayout(angle_layout)
-        main_command_layout.addWidget(angle_group)
+        angle_column.addWidget(angle_group)
+        
+        # Add stretcher to fill vertical space
+        angle_column.addStretch()
+        
+        # === COLUMN 2: Empty for now ===
+        column2 = QVBoxLayout()
+        column2_group = QGroupBox("Column 2")
+        column2_layout = QVBoxLayout()
+        column2_layout.addWidget(QLabel("Reserved for future controls"))
+        column2_group.setLayout(column2_layout)
+        column2.addWidget(column2_group)
+        column2.addStretch()
+        
+        # === COLUMN 3: Empty for now ===
+        column3 = QVBoxLayout()
+        column3_group = QGroupBox("Column 3")
+        column3_layout = QVBoxLayout()
+        column3_layout.addWidget(QLabel("Reserved for future controls"))
+        column3_group.setLayout(column3_layout)
+        column3.addWidget(column3_group)
+        column3.addStretch()
+        
+        # Add the three columns to the horizontal layout
+        three_column_layout.addLayout(angle_column, 1)  # 1/3 of space
+        three_column_layout.addLayout(column2, 1)       # 1/3 of space
+        three_column_layout.addLayout(column3, 1)       # 1/3 of space
+        
+        # Add the three-column layout to the main layout
+        main_command_layout.addLayout(three_column_layout)
         
         # Create a widget for the command input and angles
         command_widget = QWidget()
@@ -115,27 +153,44 @@ class CommandManager(QObject):
         
         # Create button layout
         button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 5, 0, 0)
+        
+        # Set button style for more compact buttons
+        button_style = """
+            QPushButton {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        """
         
         # Reset button goes back to the saved default
-        self.reset_button = QPushButton("Reset to Default")
+        self.reset_button = QPushButton("Reset")
+        self.reset_button.setStyleSheet(button_style)
         self.reset_button.clicked.connect(self.reset_command)
+        self.reset_button.setToolTip("Reset to saved default command")
         
         # Save as default button to store the current command
-        self.save_default_button = QPushButton("Save as Default")
+        self.save_default_button = QPushButton("Save Default")
+        self.save_default_button.setStyleSheet(button_style)
         self.save_default_button.clicked.connect(self.save_as_default)
+        self.save_default_button.setToolTip("Save current command as default")
         
         # Factory reset button to restore original default
         self.factory_reset_button = QPushButton("Factory Reset")
+        self.factory_reset_button.setStyleSheet(button_style)
         self.factory_reset_button.clicked.connect(self.factory_reset)
+        self.factory_reset_button.setToolTip("Reset to factory default")
         
         # Run button
         self.run_button = QPushButton("Run Command")
+        self.run_button.setStyleSheet(button_style)
         self.run_button.clicked.connect(self.run_command)
         
         # Add buttons to layout
         button_layout.addWidget(self.reset_button)
         button_layout.addWidget(self.save_default_button)
         button_layout.addWidget(self.factory_reset_button)
+        button_layout.addStretch(1)  # Add stretch to push run button to the right
         button_layout.addWidget(self.run_button)
         
         # Return the input widget and button layout

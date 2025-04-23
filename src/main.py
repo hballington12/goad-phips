@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget, 
                           QPushButton, QMessageBox, QLabel, QTextEdit, QHBoxLayout,
-                          QTabWidget, QFileDialog)
+                          QTabWidget, QFileDialog, QSplitter)
 from PyQt6.QtCore import Qt, QProcess, pyqtSignal, QTimer
 import sys
 import os
@@ -64,33 +64,32 @@ class MainWindow(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-        main_layout = QVBoxLayout()
-
+        # Create main layout as a horizontal layout to split the screen
+        main_layout = QHBoxLayout()
+        
+        # === LEFT SIDE: Command controls and tabbed interface ===
+        left_pane = QVBoxLayout()
+        
         # Add title and description
         title_label = QLabel("Goad Light Scattering Tool")
         title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
-        main_layout.addWidget(title_label)
+        left_pane.addWidget(title_label)
         
         desc_label = QLabel("Run the Goad light scattering computation tool and visualize results")
-        main_layout.addWidget(desc_label)
-        main_layout.addSpacing(5)
+        left_pane.addWidget(desc_label)
+        left_pane.addSpacing(5)
 
         # Command input pre-filled with default command
         command_label = QLabel("Command:")
-        main_layout.addWidget(command_label)
+        left_pane.addWidget(command_label)
         
         # Create command input UI components
         command_input, button_layout = self.cmd_manager.create_ui()
-        main_layout.addWidget(command_input)
+        left_pane.addWidget(command_input)
         
         # Add buttons
         self.plot_button = QPushButton("Plot Results", self)
         self.plot_button.clicked.connect(self.plot_results)
-        
-        # Add 3D view button
-        self.view_3d_button = QPushButton("View 3D Model", self)
-        self.view_3d_button.clicked.connect(self.view_3d_model)
-        self.view_3d_button.setEnabled(os.path.exists(self.obj_file))
         
         # Clear terminal button
         self.clear_button = QPushButton("Clear Terminal", self)
@@ -98,12 +97,11 @@ class MainWindow(QMainWindow):
         
         # Add buttons to layout
         button_layout.addWidget(self.plot_button)
-        button_layout.addWidget(self.view_3d_button)
         button_layout.addWidget(self.clear_button)
         
-        main_layout.addLayout(button_layout)
+        left_pane.addLayout(button_layout)
         
-        # Create tabs for terminal, plot, and 3D view
+        # Create tabs for terminal and plot only (3D model is now in right pane)
         self.tabs = QTabWidget()
         
         # Terminal tab
@@ -133,38 +131,72 @@ class MainWindow(QMainWindow):
         
         self.plot_tab.setLayout(plot_layout)
         
-        # 3D view tab
-        self.model_tab = QWidget()
-        model_layout = QVBoxLayout()
+        # Add tabs to widget - only terminal and plot now
+        self.tabs.addTab(self.terminal_tab, "Terminal Output")
+        self.tabs.addTab(self.plot_tab, "Scatter Plot")
+        
+        left_pane.addWidget(self.tabs)
+
+        # === RIGHT SIDE: Persistent 3D Model Viewer ===
+        right_pane = QVBoxLayout()
+        
+        # Add a title for the 3D viewer section
+        model_title = QLabel("3D Model Viewer")
+        model_title.setStyleSheet("font-size: 14px; font-weight: bold;")
+        right_pane.addWidget(model_title)
         
         # Create 3D viewer widget
         self.obj_viewer = OBJViewer(self)
-        model_layout.addWidget(self.obj_viewer)
+        right_pane.addWidget(self.obj_viewer)
         
         # Add 3D viewer controls
         controls_layout = QHBoxLayout()
-        controls_layout.addStretch()
         
         # Load model button
         self.load_model_button = QPushButton("Load OBJ File", self)
         self.load_model_button.clicked.connect(self.load_obj_file)
         controls_layout.addWidget(self.load_model_button)
         
+        # View model button (now directly in the controls)
+        self.view_3d_button = QPushButton("View Current Model", self)
+        self.view_3d_button.clicked.connect(self.view_3d_model)
+        self.view_3d_button.setEnabled(os.path.exists(self.obj_file))
+        controls_layout.addWidget(self.view_3d_button)
+        
+        right_pane.addLayout(controls_layout)
+        
+        # Add a second row of controls
+        controls_layout2 = QHBoxLayout()
+        
         # Instruction label
         instructions = QLabel("Drag to rotate, scroll to zoom")
         instructions.setStyleSheet("font-style: italic; color: #888888;")
-        controls_layout.addWidget(instructions)
+        controls_layout2.addWidget(instructions)
         
-        model_layout.addLayout(controls_layout)
-        self.model_tab.setLayout(model_layout)
+        right_pane.addLayout(controls_layout2)
         
-        # Add tabs to widget
-        self.tabs.addTab(self.terminal_tab, "Terminal Output")
-        self.tabs.addTab(self.plot_tab, "Scatter Plot")
-        self.tabs.addTab(self.model_tab, "3D Model")
+        # Add a spacer at the bottom of the right pane to prevent excessive stretching
+        right_pane.addStretch(1)
         
-        main_layout.addWidget(self.tabs)
-
+        # Create QWidgets for both panes
+        left_widget = QWidget()
+        left_widget.setLayout(left_pane)
+        
+        right_widget = QWidget()
+        right_widget.setLayout(right_pane)
+        
+        # Create a splitter to allow resizing between panes
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.addWidget(left_widget)
+        splitter.addWidget(right_widget)
+        
+        # Set the initial sizes (60% left, 40% right)
+        splitter.setSizes([600, 400])
+        
+        # Add the splitter to the main layout
+        main_layout.addWidget(splitter)
+        
+        # Create the main container and set it as the central widget
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
@@ -233,9 +265,8 @@ class MainWindow(QMainWindow):
             self.tabs.setCurrentIndex(0)  # Switch back to terminal to show error
     
     def view_3d_model(self):
-        """View the 3D model from rotated.obj"""
-        # Switch to the 3D model tab
-        self.tabs.setCurrentIndex(2)
+        """Load the current model in the 3D viewer"""
+        # No need to switch tabs as the model viewer is always visible
         
         # Load the model if it exists
         if os.path.exists(self.obj_file):
@@ -244,10 +275,8 @@ class MainWindow(QMainWindow):
                 self.terminal.append_output(f"3D model loaded successfully: {message}")
             else:
                 self.terminal.append_output(f"Error loading 3D model: {message}", True)
-                self.tabs.setCurrentIndex(0)  # Switch back to terminal to show error
         else:
             self.terminal.append_output(f"3D model file not found: {self.obj_file}", True)
-            self.tabs.setCurrentIndex(0)  # Switch back to terminal to show error
     
     def load_obj_file(self):
         """Open a file dialog to load an OBJ file"""
